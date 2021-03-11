@@ -16,54 +16,52 @@ else:
     except:
         from StringIO import StringIO
 
-
 CBOR_TYPE_MASK = 0xE0  # top 3 bits
 CBOR_INFO_BITS = 0x1F  # low 5 bits
 
+CBOR_UINT = 0x00
+CBOR_NEGINT = 0x20
+CBOR_BYTES = 0x40
+CBOR_TEXT = 0x60
+CBOR_ARRAY = 0x80
+CBOR_MAP = 0xA0
+CBOR_TAG = 0xC0
+CBOR_7 = 0xE0  # float and other types
 
-CBOR_UINT    = 0x00
-CBOR_NEGINT  = 0x20
-CBOR_BYTES   = 0x40
-CBOR_TEXT    = 0x60
-CBOR_ARRAY   = 0x80
-CBOR_MAP     = 0xA0
-CBOR_TAG     = 0xC0
-CBOR_7       = 0xE0  # float and other types
-
-CBOR_UINT8_FOLLOWS  = 24  # 0x18
+CBOR_UINT8_FOLLOWS = 24  # 0x18
 CBOR_UINT16_FOLLOWS = 25  # 0x19
 CBOR_UINT32_FOLLOWS = 26  # 0x1a
 CBOR_UINT64_FOLLOWS = 27  # 0x1b
-CBOR_VAR_FOLLOWS    = 31  # 0x1f
+CBOR_VAR_FOLLOWS = 31  # 0x1f
 
-CBOR_BREAK  = 0xFF
+CBOR_BREAK = 0xFF
 
-CBOR_FALSE  = (CBOR_7 | 20)
-CBOR_TRUE   = (CBOR_7 | 21)
-CBOR_NULL   = (CBOR_7 | 22)
-CBOR_UNDEFINED   = (CBOR_7 | 23)  # js 'undefined' value
+CBOR_FALSE = (CBOR_7 | 20)
+CBOR_TRUE = (CBOR_7 | 21)
+CBOR_NULL = (CBOR_7 | 22)
+CBOR_UNDEFINED = (CBOR_7 | 23)  # js 'undefined' value
 
 CBOR_FLOAT16 = (CBOR_7 | 25)
 CBOR_FLOAT32 = (CBOR_7 | 26)
 CBOR_FLOAT64 = (CBOR_7 | 27)
 
-CBOR_TAG_DATE_STRING = 0 # RFC3339
-CBOR_TAG_DATE_ARRAY = 1 # any number type follows, seconds since 1970-01-01T00:00:00 UTC
-CBOR_TAG_BIGNUM = 2 # big endian byte string follows
-CBOR_TAG_NEGBIGNUM = 3 # big endian byte string follows
-CBOR_TAG_DECIMAL = 4 # [ 10^x exponent, number ]
-CBOR_TAG_BIGFLOAT = 5 # [ 2^x exponent, number ]
+CBOR_TAG_DATE_STRING = 0  # RFC3339
+CBOR_TAG_DATE_ARRAY = 1  # any number type follows, seconds since 1970-01-01T00:00:00 UTC
+CBOR_TAG_BIGNUM = 2  # big endian byte string follows
+CBOR_TAG_NEGBIGNUM = 3  # big endian byte string follows
+CBOR_TAG_DECIMAL = 4  # [ 10^x exponent, number ]
+CBOR_TAG_BIGFLOAT = 5  # [ 2^x exponent, number ]
 CBOR_TAG_BASE64URL = 21
 CBOR_TAG_BASE64 = 22
 CBOR_TAG_BASE16 = 23
-CBOR_TAG_CBOR = 24 # following byte string is embedded CBOR data
+CBOR_TAG_CBOR = 24  # following byte string is embedded CBOR data
 
 CBOR_TAG_URI = 32
 CBOR_TAG_BASE64URL = 33
 CBOR_TAG_BASE64 = 34
 CBOR_TAG_REGEX = 35
-CBOR_TAG_MIME = 36 # following text is MIME message, headers, separators and all
-CBOR_TAG_CBOR_FILEHEADER = 55799 # can open a file with 0xd9d9f7
+CBOR_TAG_MIME = 36  # following text is MIME message, headers, separators and all
+CBOR_TAG_CBOR_FILEHEADER = 55799  # can open a file with 0xd9d9f7
 
 _CBOR_TAG_BIGNUM_BYTES = struct.pack('B', CBOR_TAG | CBOR_TAG_BIGNUM)
 
@@ -123,7 +121,7 @@ def _encode_type_num(cbor_type, val):
     if val <= 0x0ffffffff:
         return struct.pack('!BI', cbor_type | CBOR_UINT32_FOLLOWS, val)
     if (((cbor_type == CBOR_NEGINT) and (val <= 0x07fffffffffffffff)) or
-        ((cbor_type != CBOR_NEGINT) and (val <= 0x0ffffffffffffffff))):
+            ((cbor_type != CBOR_NEGINT) and (val <= 0x0ffffffffffffffff))):
         return struct.pack('!BQ', cbor_type | CBOR_UINT64_FOLLOWS, val)
     if cbor_type != CBOR_NEGINT:
         raise Exception("value too big for CBOR unsigned number: {0!r}".format(val))
@@ -155,6 +153,12 @@ def dumps_array(arr, sort_keys=False):
     return head + b''.join(parts)
 
 
+def dumps_var_array(arr, sort_keys=False):
+    head = struct.pack('B', CBOR_ARRAY | CBOR_VAR_FOLLOWS)
+    parts = [dumps(x, sort_keys=sort_keys) for x in arr]
+    return head + b''.join(parts) + bytes([CBOR_BREAK])
+
+
 if _IS_PY3:
     def dumps_dict(d, sort_keys=False):
         head = _encode_type_num(CBOR_MAP, len(d))
@@ -165,7 +169,7 @@ if _IS_PY3:
                 parts.append(dumps(k, sort_keys=sort_keys))
                 parts.append(dumps(v, sort_keys=sort_keys))
         else:
-            for k,v in d.items():
+            for k, v in d.items():
                 parts.append(dumps(k, sort_keys=sort_keys))
                 parts.append(dumps(v, sort_keys=sort_keys))
         return b''.join(parts)
@@ -179,7 +183,7 @@ else:
                 parts.append(dumps(k, sort_keys=sort_keys))
                 parts.append(dumps(v, sort_keys=sort_keys))
         else:
-            for k,v in d.iteritems():
+            for k, v in d.iteritems():
                 parts.append(dumps(k, sort_keys=sort_keys))
                 parts.append(dumps(v, sort_keys=sort_keys))
         return b''.join(parts)
@@ -193,18 +197,27 @@ def dumps_bool(b):
 
 def dumps_tag(t, sort_keys=False):
     return _encode_type_num(CBOR_TAG, t.tag) + dumps(t.value, sort_keys=sort_keys)
-    
+
 
 if _IS_PY3:
     def _is_stringish(x):
         return isinstance(x, (str, bytes))
+
+
     def _is_intish(x):
         return isinstance(x, int)
 else:
     def _is_stringish(x):
         return isinstance(x, (str, basestring, bytes, unicode))
+
+
     def _is_intish(x):
         return isinstance(x, (int, long))
+
+
+class VarList(list):
+    def __repr__(self):
+        return 'VarList(%s)' % list.__repr__(self)
 
 
 def dumps(ob, sort_keys=False):
@@ -214,6 +227,8 @@ def dumps(ob, sort_keys=False):
         return dumps_bool(ob)
     if _is_stringish(ob):
         return dumps_string(ob)
+    if isinstance(ob, VarList):
+        return dumps_var_array(ob, sort_keys=sort_keys)
     if isinstance(ob, (list, tuple)):
         return dumps_array(ob, sort_keys=sort_keys)
     # TODO: accept other enumerables and emit a variable length array
@@ -312,7 +327,7 @@ def _read_byte(fp):
 
 
 def _loads_var_array(fp, limit, depth, returntags, bytes_read):
-    ob = []
+    ob = VarList()
     tb = _read_byte(fp)
     while tb != CBOR_BREAK:
         (subob, sub_len) = _loads_tb(fp, tb, limit, depth, returntags)
@@ -343,6 +358,8 @@ if _IS_PY3:
             bytes_read += subpos
             ob.append(subob)
         return ob, bytes_read
+
+
     def _loads_map(fp, limit, depth, returntags, aux, bytes_read):
         ob = {}
         for i in range(aux):
@@ -360,6 +377,8 @@ else:
             bytes_read += subpos
             ob.append(subob)
         return ob, bytes_read
+
+
     def _loads_map(fp, limit, depth, returntags, aux, bytes_read):
         ob = {}
         for i in xrange(aux):
@@ -369,7 +388,7 @@ else:
             bytes_read += subpos
             ob[subk] = subv
         return ob, bytes_read
-        
+
 
 def _loads(fp, limit=None, depth=0, returntags=False):
     "return (object, bytes read)"
@@ -379,6 +398,7 @@ def _loads(fp, limit=None, depth=0, returntags=False):
     tb = _read_byte(fp)
 
     return _loads_tb(fp, tb, limit, depth, returntags)
+
 
 def _loads_tb(fp, tb, limit=None, depth=0, returntags=False):
     # Some special cases of CBOR_7 best handled by special struct.unpack logic here

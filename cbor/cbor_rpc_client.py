@@ -6,7 +6,6 @@ import time
 
 import cbor
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -14,6 +13,7 @@ class SocketReader(object):
     '''
     Simple adapter from socket.recv to file-like-read
     '''
+
     def __init__(self, sock):
         self.socket = sock
         self.timeout_seconds = 10.0
@@ -58,7 +58,9 @@ class CborRpcClient(object):
             if not isinstance(self._socket_addr, tuple):
                 # python socket standard library insists this be tuple!
                 tsocket_addr = tuple(self._socket_addr)
-                assert len(tsocket_addr) == 2, 'address must be length-2 tuple ("hostname", port number), got {!r} tuplified to {!r}'.format(self._socket_addr, tsocket_addr)
+                assert len(
+                    tsocket_addr) == 2, 'address must be length-2 tuple ("hostname", port number), got {!r} tuplified to {!r}'.format(
+                    self._socket_addr, tsocket_addr)
                 self._socket_addr = tsocket_addr
         self._socket = None
         self._rfile = None
@@ -139,7 +141,7 @@ class CborRpcClient(object):
                 # non-connectivity, it gave us an error message. We
                 # don't retry that, we raise it to the user.
                 errormessage = response.get('error')
-                if errormessage and hasattr(errormessage,'get'):
+                if errormessage and hasattr(errormessage, 'get'):
                     errormessage = errormessage.get('message')
                 if not errormessage:
                     errormessage = repr(response)
@@ -161,15 +163,16 @@ class CborRpcClient(object):
 
 if __name__ == '__main__':
     import sys
+
     logging.basicConfig(level=logging.DEBUG)
-    host,port = sys.argv[1].split(':')
+    host, port = sys.argv[1].split(':')
     if not host:
         host = 'localhost'
     port = int(port)
-    client = CborRpcClient({'address':(host,port)})
+    client = CborRpcClient({'address': (host, port)})
     print(client._rpc(u'connect', [u'127.0.0.1:5432', u'root', u'aoeu']))
-    print(client._rpc(u'put', [[('k1','v1'), ('k2','v2')]]))
-    #print(client._rpc(u'ping', []))
-    #print(client._rpc(u'gnip', []))
+    print(client._rpc(u'put', [[('k1', 'v1'), ('k2', 'v2')]]))
+    # print(client._rpc(u'ping', []))
+    # print(client._rpc(u'gnip', []))
     client.close()
-        
+
